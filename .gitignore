@@ -1,0 +1,9 @@
+*.scvd
+*.bak
+*.uvguix.*
+*.uvoptx
+Listings/
+Objects/
+DebugConfig/
+.vscode/
+*.user

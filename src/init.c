@@ -4,11 +4,15 @@
 
 static void initializeClock(void);
 static void initializeGPIO(void);
+static void initializeDMA(void);
+static void initializeSPI(void);
 
 void mcuInitialization(void)
 {
 	initializeClock();
 	initializeGPIO();
+	initializeDMA();
+	initializeSPI();
 }
 
 static void initializeClock(void)
@@ -57,4 +61,37 @@ static void initializeGPIO(void)
 	GPIOC->MODER &= ~GPIO_MODER_MODER9_Msk;
 	GPIOC->MODER |= GPIO_MODER_MODER9_1;
 #endif	//	DEBUG_MCU_SYSCLK
+	
+	/*
+	*	SPI pins
+	*		PA4 - NSS
+	*		PA5 - SCK
+	*		PA6 - MISO
+	*		PA7 - MOSI
+	*/
+	for (uint8_t i = 0; i < 4; i++)
+	{
+		GPIOA->MODER &= ~(0b11 << (GPIO_MODER_MODER4_Pos + (i * 2)));
+		GPIOA->MODER |= (0b10 << (GPIO_MODER_MODER4_Pos + (i * 2)));
+		
+		GPIOA->OTYPER &= ~(0b1 << (GPIO_OTYPER_OT4_Pos + i));
+		
+		GPIOA->OSPEEDR &= ~(0b11 << (GPIO_OSPEEDR_OSPEEDR4_Pos + (i * 2)));
+		GPIOA->OSPEEDR |= (0b11 << (GPIO_OSPEEDR_OSPEEDR4_Pos + (i * 2)));
+		
+		GPIOA->PUPDR &= ~(0b11 << (GPIO_PUPDR_PUPDR4_Pos + (i * 2)));
+		
+		GPIOA->AFR[0] &= ~(15 << (GPIO_AFRL_AFRL4_Pos + (i * 4)));
+		GPIOA->AFR[0] |= (5 << (GPIO_AFRL_AFRL4_Pos + (i * 4)));
+	}
+}
+
+static void initializeDMA(void)
+{
+	return;
+}
+
+static void initializeSPI(void)
+{
+	return;
 }

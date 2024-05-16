@@ -338,9 +338,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>DEBUG_MCU_SYSCLK</Define>
+              <Define>nDEBUG_MCU_SYSCLK</Define>
               <Undefine></Undefine>
-              <IncludePath>.\inc</IncludePath>
+              <IncludePath>.\inc;.\inc\drivers</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -393,6 +393,21 @@
               <FileName>init.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\init.c</FilePath>
+            </File>
+            <File>
+              <FileName>spi.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\drivers\spi.h</FilePath>
+            </File>
+            <File>
+              <FileName>spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\drivers\spi.c</FilePath>
+            </File>
+            <File>
+              <FileName>init.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\init.h</FilePath>
             </File>
           </Files>
         </Group>

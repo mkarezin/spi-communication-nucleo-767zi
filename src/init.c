@@ -2,6 +2,11 @@
 
 #include <stm32f767xx.h>
 
+#include "dma.h"
+#include "config.h"
+#include "spi.h"
+#include "functions.h"
+
 static void initializeClock(void);
 static void initializeGPIO(void);
 static void initializeDMA(void);
@@ -54,7 +59,8 @@ static void initializeClock(void)
 
 static void initializeGPIO(void)
 {
-	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
+	RCC->AHB1ENR |= (RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOBEN);
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 	__NOP(); __NOP();
 	
 #ifdef DEBUG_MCU_SYSCLK
@@ -63,35 +69,63 @@ static void initializeGPIO(void)
 #endif	//	DEBUG_MCU_SYSCLK
 	
 	/*
-	*	SPI pins
-	*		PA4 - NSS
-	*		PA5 - SCK
-	*		PA6 - MISO
-	*		PA7 - MOSI
+	*	SPI3 pins
+	*		PA15 - NSS (GPIO)	+
+	*		PB3 - SCK			+
+	*		PB4 - MISO			+
+	*		PB5 - MOSI			+
 	*/
-	for (uint8_t i = 0; i < 4; i++)
+	GPIOA->MODER &= ~(0b11 << GPIO_MODER_MODER15_Pos);
+			
+	GPIOA->OTYPER &= ~(0b1 << GPIO_OTYPER_OT15_Pos);
+	
+	GPIOA->OSPEEDR |= (0b11 << GPIO_OSPEEDR_OSPEEDR15_Pos);
+	
+	GPIOA->PUPDR &= ~(0b11 << GPIO_PUPDR_PUPDR15_Pos);
+	GPIOA->PUPDR |= (0b01 << GPIO_PUPDR_PUPDR15_Pos);
+	
+	SYSCFG->EXTICR[3] |= SYSCFG_EXTICR4_EXTI15_PA;
+	EXTI->RTSR |= EXTI_RTSR_TR15;
+	enableExtiInterrupt();
+	NVIC_EnableIRQ(EXTI15_10_IRQn);
+	
+	for (uint8_t i = 0; i < 3; i++)
 	{
-		GPIOA->MODER &= ~(0b11 << (GPIO_MODER_MODER4_Pos + (i * 2)));
-		GPIOA->MODER |= (0b10 << (GPIO_MODER_MODER4_Pos + (i * 2)));
+		GPIOB->MODER &= ~(0b11 << (GPIO_MODER_MODER3_Pos + (i * 2)));
+		GPIOB->MODER |= (0b10 << (GPIO_MODER_MODER3_Pos + (i * 2)));
 		
-		GPIOA->OTYPER &= ~(0b1 << (GPIO_OTYPER_OT4_Pos + i));
+		GPIOB->OTYPER &= ~(0b1 << (GPIO_OTYPER_OT3_Pos + i));
 		
-		GPIOA->OSPEEDR &= ~(0b11 << (GPIO_OSPEEDR_OSPEEDR4_Pos + (i * 2)));
-		GPIOA->OSPEEDR |= (0b11 << (GPIO_OSPEEDR_OSPEEDR4_Pos + (i * 2)));
+		GPIOB->OSPEEDR &= ~(0b11 << (GPIO_OSPEEDR_OSPEEDR3_Pos + (i * 2)));
+		GPIOB->OSPEEDR |= (0b11 << (GPIO_OSPEEDR_OSPEEDR3_Pos + (i * 2)));
 		
-		GPIOA->PUPDR &= ~(0b11 << (GPIO_PUPDR_PUPDR4_Pos + (i * 2)));
+		GPIOB->PUPDR &= ~(0b11 << (GPIO_PUPDR_PUPDR3_Pos + (i * 2)));
 		
-		GPIOA->AFR[0] &= ~(15 << (GPIO_AFRL_AFRL4_Pos + (i * 4)));
-		GPIOA->AFR[0] |= (5 << (GPIO_AFRL_AFRL4_Pos + (i * 4)));
+		GPIOB->AFR[0] &= ~(15 << (GPIO_AFRL_AFRL3_Pos + (i * 4)));
+		GPIOB->AFR[0] |= (6 << (GPIO_AFRL_AFRL3_Pos + (i * 4)));
 	}
 }
 
 static void initializeDMA(void)
 {
-	return;
+	/*
+	*	DMA1.Stream2.Channel0 - SPI3_RX
+	*	DMA1.Stream5.Channel0 - SPI3_TX
+	*/
+	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
+	
+	disableDma(MINI_PC_COMMUNICATION_RECEIVER_DMA_STREAM);
+	disableDma(MINI_PC_COMMUNICATION_TRANSMITTER_DMA_STREAM);
+	
+	NVIC_EnableIRQ(DMA1_Stream5_IRQn);
 }
 
 static void initializeSPI(void)
 {
-	return;
+	RCC->APB1ENR |= RCC_APB1ENR_SPI3EN;
+	
+	disableSPI(MINI_PC_COMMUNICATION_INTERFACE);
+	MINI_PC_COMMUNICATION_INTERFACE->CR1 = (SPI_CR1_SSM | (SPI_BAUDRATE_PRESCALER_2 << SPI_CR1_BR_Pos));
+	MINI_PC_COMMUNICATION_INTERFACE->CR2 |= SPI_CR2_FRXTH;
+	enableSPI(MINI_PC_COMMUNICATION_INTERFACE);
 }
